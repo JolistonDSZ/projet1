@@ -313,6 +313,10 @@ footer {
     font-size: 14px;
 }
 
+footer a {
+    color: #fff;
+}
+
 .bandeau {
     background-color: #633a90;
 }
