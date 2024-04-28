@@ -242,7 +242,7 @@ header button {
     font-size: 12px;
 }
 #contact {
-    height: 50px;
+    height: 80vh;
     width: 50px;
     display: flex;
     align-items: center;
