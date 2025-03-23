@@ -1,67 +1,74 @@
 <?php
 if (isset($_POST['send'])) {
     if (!empty($_POST['marque']) && !empty($_POST['modele']) && !empty($_POST['dateConstruction']) && !empty($_POST['couleur']) && !empty($_POST['prix']) && !empty($_POST['nbCheveaux'])) {
+        // Inclure la connexion PDO
         include_once "../modele/connect_ddb.php";
 
-        // Échapper les entrées pour éviter les injections SQL
-        $marque = mysqli_real_escape_string($conn, $_POST['marque']);
-        $modele = mysqli_real_escape_string($conn, $_POST['modele']);
-        $dateConstruction = mysqli_real_escape_string($conn, $_POST['dateConstruction']);
-        $couleur = mysqli_real_escape_string($conn, $_POST['couleur']);
-        $prix = mysqli_real_escape_string($conn, $_POST['prix']);
-        $nbCheveaux = mysqli_real_escape_string($conn, $_POST['nbCheveaux']);
+        // Connexion à la base de données avec PDO
+        $conn = connexionPDO();
+
+        // Préparer les données
+        $marque = $_POST['marque'];
+        $modele = $_POST['modele'];
+        $dateConstruction = $_POST['dateConstruction'];
+        $couleur = $_POST['couleur'];
+        $prix = $_POST['prix'];
+        $nbCheveaux = $_POST['nbCheveaux'];
 
         // Vérifiez si des données existent déjà pour la voiture
-        $existingData = mysqli_query($conn, "SELECT * FROM voiture WHERE marque = '$marque' AND modele = '$modele'");
-        if (mysqli_num_rows($existingData) > 0) {
+        $stmt = $conn->prepare("SELECT * FROM voiture WHERE marque = :marque AND modele = :modele");
+        $stmt->bindParam(':marque', $marque);
+        $stmt->bindParam(':modele', $modele);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
             // Si des données existent, effectuez une mise à jour
-            $updateQuery = "UPDATE voiture SET dateConstruction = '$dateConstruction', couleur = '$couleur', prix = '$prix', nbCheveaux = '$nbCheveaux' WHERE marque = '$marque' AND modele = '$modele'";
-            if (mysqli_query($conn, $updateQuery)) {
-                header("location:../vue/classement.php");
+            $updateQuery = "UPDATE voiture SET dateConstruction = :dateConstruction, couleur = :couleur, prix = :prix, nbCheveaux = :nbCheveaux WHERE marque = :marque AND modele = :modele";
+            $updateStmt = $conn->prepare($updateQuery);
+            $updateStmt->bindParam(':marque', $marque);
+            $updateStmt->bindParam(':modele', $modele);
+            $updateStmt->bindParam(':dateConstruction', $dateConstruction);
+            $updateStmt->bindParam(':couleur', $couleur);
+            $updateStmt->bindParam(':prix', $prix);
+            $updateStmt->bindParam(':nbCheveaux', $nbCheveaux);
+
+            if ($updateStmt->execute()) {
+                header("Location: ../vue/classement.php");
+                exit();
             } else {
-                header("location:addVoiture.php?message=UpdateFail");
+                header("Location: addVoiture.php?message=UpdateFail");
+                exit();
             }
         } else {
-            // Si aucune donnée n'existe, insérez une nouvelle entrée
-            $insertQuery = "INSERT INTO voiture (marque, modele, dateConstruction, couleur, prix, nbCheveaux) VALUES ('$marque', '$modele', '$dateConstruction', '$couleur', '$prix', '$nbCheveaux')";
-            if (mysqli_query($conn, $insertQuery)) {
-                header("location:../vue/classement.php");
+            // Si aucune donnée n'existe, insérez une nouvelle voiture
+            $insertQuery = "INSERT INTO voiture (marque, modele, dateConstruction, couleur, prix, nbCheveaux) 
+                            VALUES (:marque, :modele, :dateConstruction, :couleur, :prix, :nbCheveaux)";
+            $insertStmt = $conn->prepare($insertQuery);
+            $insertStmt->bindParam(':marque', $marque);
+            $insertStmt->bindParam(':modele', $modele);
+            $insertStmt->bindParam(':dateConstruction', $dateConstruction);
+            $insertStmt->bindParam(':couleur', $couleur);
+            $insertStmt->bindParam(':prix', $prix);
+            $insertStmt->bindParam(':nbCheveaux', $nbCheveaux);
+
+            if ($insertStmt->execute()) {
+                header("Location: ../vue/classement.php");
+                exit();
             } else {
-                header("location:addVoiture.php?message=AddFail");
+                header("Location: addVoiture.php?message=AddFail");
+                exit();
             }
         }
 
-        $conn->close(); // Fermez la connexion
+        // Fermer la connexion PDO (bien que PDO se ferme automatiquement à la fin du script)
+        $conn = null;
     } else {
-        header("location:addVoiture.php?message=EmptyFields");
+        header("Location: addVoiture.php?message=EmptyFields");
+        exit();
     }
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-<title>Ajouter une voiture</title>
-<link rel="stylesheet" href="../crud.css">
-</head>
-<body>
 
-<form action="" method="post">
-<h1>Ajouter une voiture</h1>
-<input type="text" name="marque" placeholder="marque">
-<input type="text" name="modele" placeholder="modele">
-<input type="text" name="dateConstruction" placeholder="Date de Construction">
-<input type="text" name="couleur" placeholder="couleur">
-<input type="text" name="prix" placeholder="Prix">
-<input type="text" name="nbCheveaux" placeholder="Nombre de Chevaux">
-<input type="submit" value="Ajouter" name="send"> 
-<a class="link back" href="../vue/classement.php">Annuler</a> 
-</form>
-
-</body>
-</html>
 
 
